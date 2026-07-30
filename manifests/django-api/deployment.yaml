@@ -72,12 +72,18 @@ spec:
             httpGet:
               path: /healthz
               port: 8000
+              httpHeaders:
+                - name: Host
+                  value: django-api.django-api.svc.cluster.local
             failureThreshold: 30
             periodSeconds: 5
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8000
+              httpHeaders:
+                - name: Host
+                  value: django-api.django-api.svc.cluster.local
             initialDelaySeconds: 5
             periodSeconds: 10
             failureThreshold: 3
@@ -85,6 +91,9 @@ spec:
             httpGet:
               path: /healthz
               port: 8000
+              httpHeaders:
+                - name: Host
+                  value: django-api.django-api.svc.cluster.local
             initialDelaySeconds: 30
             periodSeconds: 30
             failureThreshold: 3
