@@ -58,6 +58,9 @@ SOPS+age is a reasonable alternative but requires an ArgoCD plugin for decryptio
 **Postgres: Raw StatefulSet**
 CloudNativePG handles failover, connection pooling, and scheduled backups automatically and is the right production choice. A raw StatefulSet was used here because it maps 1:1 to the concepts under test (PVC lifecycle, headless service, pod ordering) without operator abstraction. The migration path is replacing the StatefulSet with a CloudNativePG `Cluster` CRD.
 
+**Ingress: minikube addon (ingress-nginx)**
+The requirement specifies the minikube ingress addon. `minikube addons enable ingress` installs ingress-nginx into the `ingress-nginx` namespace. The Ingress resource in `manifests/django-api/ingress.yaml` routes `qoves.local` to the django-api Service. On macOS with the Docker driver the addon creates a NodePort service by default; `minikube tunnel` only exposes LoadBalancer services, so the service was patched to `type: LoadBalancer` to make it reachable at `127.0.0.1:80`. On Linux minikube this step is not needed — the node IP is directly routable.
+
 **HPA scaling signal: CPU (with caveats)**
 CPU is a weak signal for an I/O-bound API whose bottleneck is database round-trips — a pod can be saturated waiting on Postgres while CPU stays low. The CPU HPA satisfies the requirement because `metrics-server` is available out of the box. In production the right signal is request rate (`django_http_requests_total` via KEDA + Prometheus scaler) or P99 latency, which scales before users notice degradation rather than after CPU already spikes.
 
@@ -69,7 +72,7 @@ CPU is a weak signal for an I/O-bound API whose bottleneck is database round-tri
 |---|---|
 | Control plane bootstrap | `kubeadm init`, TLS cert distribution, etcd on 3 nodes |
 | CNI install | `helm install cilium` with explicit pod CIDR and kube-proxy replacement |
-| Ingress load-balancing | MetalLB (L2) or hardware LB in front of ingress-nginx |
+| Ingress load-balancing | MetalLB (L2 mode) assigns a real IP from a local pool to the ingress-nginx LoadBalancer Service; on macOS + Docker driver minikube tunnel handles this via a userspace proxy to 127.0.0.1 |
 | Storage provisioner | Rook-Ceph, NFS provisioner, or local-path-provisioner (no replication) |
 | etcd | 3–5 dedicated etcd nodes, snapshot backups to object storage on a cron |
 
