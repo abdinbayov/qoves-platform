@@ -27,16 +27,19 @@ minikube addons enable ingress
 minikube addons enable metrics-server
 
 # ── 2. Image ──────────────────────────────────────────────────────────────────
-echo "==> 3. Build image into minikube's Docker daemon (no registry needed)"
-# eval sets the shell to talk to minikube's Docker, not the host's.
-# imagePullPolicy: Never in the manifests tells Kubernetes to use this local image.
-eval "$(minikube docker-env)"
+echo "==> 3. Build image and load into minikube (works with multi-node)"
+# Build using Docker Desktop's daemon, then load into all minikube nodes.
+# minikube image load is compatible with multi-node; docker-env is not.
 docker build -t "${IMAGE_NAME}:${IMAGE_TAG}" .
-# Reset shell back to host Docker
-eval "$(minikube docker-env --unset)"
+minikube image load "${IMAGE_NAME}:${IMAGE_TAG}"
 
-# ── 3. ArgoCD ────────────────────────────────────────────────────────────────
-echo "==> 4. Install ArgoCD (bootstrap only — all workloads are GitOps-managed after this)"
+# ── 3. Sealed Secrets controller ─────────────────────────────────────────────
+echo "==> 4. Install Sealed Secrets controller (bootstrap — controller install by hand is fine per requirements)"
+kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.27.3/controller.yaml
+kubectl wait --for=condition=available --timeout=120s deployment/sealed-secrets-controller -n kube-system
+
+# ── 4. ArgoCD ────────────────────────────────────────────────────────────────
+echo "==> 5. Install ArgoCD (bootstrap only — all workloads are GitOps-managed after this)"
 kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -n argocd \
   -f "https://raw.githubusercontent.com/argoproj/argo-cd/${ARGOCD_VERSION}/manifests/install.yaml"
@@ -44,7 +47,7 @@ echo "    Waiting for ArgoCD server to be ready..."
 kubectl wait --for=condition=available --timeout=180s deployment/argocd-server -n argocd
 
 # ── 4. Root Application ───────────────────────────────────────────────────────
-echo "==> 5. Register the root ArgoCD Application"
+echo "==> 6. Register the root ArgoCD Application"
 # This single apply is the only imperative step — from here ArgoCD owns the cluster.
 kubectl apply -f apps/root.yaml
 
