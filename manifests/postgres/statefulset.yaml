@@ -15,8 +15,6 @@ spec:
         app: postgres
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 999
         fsGroup: 999
       containers:
         - name: postgres
