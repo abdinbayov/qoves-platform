@@ -1,0 +1,23 @@
+# Root Application — watches the apps/ directory.
+# ArgoCD reconciles any Application CRD it finds there automatically.
+# To add a new service: drop a new Application yaml into apps/ and push.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/abdinbayov/qoves-platform.git
+    targetRevision: HEAD
+    path: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

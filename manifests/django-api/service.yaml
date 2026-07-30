@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-api
+  namespace: django-api
+  labels:
+    app: django-api
+spec:
+  selector:
+    app: django-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000

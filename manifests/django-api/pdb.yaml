@@ -1,0 +1,10 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: django-api
+  namespace: django-api
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: django-api

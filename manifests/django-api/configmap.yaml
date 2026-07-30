@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: django-api-config
+  namespace: django-api
+data:
+  DJANGO_SETTINGS_MODULE: "bank.settings"
+  ALLOWED_HOSTS: "qoves.local,django-api.django-api.svc.cluster.local"
+  CSRF_TRUSTED_ORIGINS: "http://qoves.local"
+  LOG_LEVEL: "INFO"
+  DB_SSLMODE: "prefer"

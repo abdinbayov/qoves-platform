@@ -1,0 +1,14 @@
+# Never commit raw secret files
+/tmp/
+*.secret.yaml
+*-secret.yaml
+!manifests/**/sealedsecret.yaml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# macOS
+.DS_Store

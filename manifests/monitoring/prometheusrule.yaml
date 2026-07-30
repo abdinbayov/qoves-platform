@@ -1,0 +1,42 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: django-api-alerts
+  namespace: monitoring
+  labels:
+    # kube-prometheus-stack picks up rules with this label
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: django-api
+      rules:
+        # Alert when /healthz has been returning 503 for 2 minutes.
+        # Actionable: DB is unreachable — check postgres pod, PVC, credentials.
+        - alert: DjangoApiDatabaseUnreachable
+          expr: |
+            sum(
+              rate(django_http_responses_total_by_status_view_method_total{
+                view="healthz", status="503"
+              }[2m])
+            ) > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Django API cannot reach the database"
+            description: "/healthz has returned 503 for 2 minutes — Postgres is likely down or credentials are invalid."
+
+        # Alert when error rate across all endpoints exceeds 5% for 5 minutes.
+        # Actionable: application-level failure — check logs, recent deploy.
+        - alert: DjangoApiHighErrorRate
+          expr: |
+            sum(rate(django_http_responses_total_by_status_view_method_total{status=~"5.."}[5m]))
+            /
+            sum(rate(django_http_responses_total_by_status_view_method_total[5m]))
+            > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Django API error rate above 5%"
+            description: "More than 5% of requests are returning 5xx. Check recent deployments and application logs."
